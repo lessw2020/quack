@@ -46,6 +46,38 @@ class RMSNorm(ReductionBase):
         return 256
 
     def _set_cluster_n(self):
+    N = self.N
+    
+    # cluster_n = 4 is faster and cluster_n = 2 for N=64k for some reason
+    # Similarly cluster_n = 8 is faster for N=128k
+    if cutlass.const_expr(self.dtype.width == 16):
+        # 16-bit types (fp16, bf16)
+        if N <= 16 * 1024:
+            cluster_n = 1
+        elif N <= 32 * 1024:
+            cluster_n = 2
+        elif N <= 64 * 1024:
+            cluster_n = 4
+        elif N <= 128 * 1024:
+            cluster_n = 8
+        else:
+            cluster_n = 16
+    else:
+        # 32-bit types (fp32)
+        if N <= 32 * 1024:
+            cluster_n = 1
+        elif N <= 64 * 1024:
+            cluster_n = 2
+        elif N <= 128 * 1024:
+            cluster_n = 4
+        elif N <= 256 * 1024:
+            cluster_n = 8
+        else:
+            cluster_n = 16
+    
+    self.cluster_n = cluster_n
+    
+    def _set_cluster_n_old(self):
         N = self.N
         # cluster_n = 4 is faster and cluster_n = 2 for N=64k for some reason
         # Similarly cluster_n = 8 is faster for N=128k
