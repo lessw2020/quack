@@ -18,7 +18,7 @@ class RMSNorm(ReductionBase):
         self.reload_from = None if N <= 16384 else "smem"
         self.delay_w_load = False
 
-    def _calculate_threads_per_row(self):
+    def _calculate_threads_per_row_old(self):
         N = self.N
         return (
             8
@@ -29,6 +29,21 @@ class RMSNorm(ReductionBase):
                 else (32 if N <= 3072 else (64 if N <= 6144 else (128 if N <= 16384 else 256)))
             )
         )
+        
+    def _calculate_threads_per_row(self):
+    N = self.N
+    if N <= 64:
+        return 8
+    elif N <= 128:
+        return 16
+    elif N <= 3072:
+        return 32
+    elif N <= 6144:
+        return 64
+    elif N <= 16384:
+        return 128
+    else:
+        return 256
 
     def _set_cluster_n(self):
         N = self.N
